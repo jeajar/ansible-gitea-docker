@@ -1,0 +1,24 @@
+---
+
+galaxy_info:
+  author: Jean-Maxim Desjardins 
+  description: your role description
+  company: your company (optional)
+
+  issue_tracker_url: https://github.com/jeajar/ansible-gitea-docker/issues
+
+  license: MIT
+
+  min_ansible_version: 2.10
+
+  platforms:
+  - name: Ubuntu
+    versions:
+    - Focal
+
+  galaxy_tags:
+    - gitea
+    - docker
+
+dependencies:
+  - atosatto.docker-swarm

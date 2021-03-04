@@ -1,0 +1,35 @@
+api:
+  dashboard: true
+  debug: true
+
+
+entryPoints:
+  http:
+    address: ":80"
+  https:
+    address: ":443"
+  ssh:
+    address: ":{{ service_ssh_port }}"
+
+providers:
+  docker:
+    endpoint: unix:///var/run/docker.sock
+    exposedByDefault: false
+    swarmMode: true
+  file:
+    directory: /extra
+    watch: true
+
+{% if "local" not in deploy_environment%}
+certificatesResolvers:
+  http:
+    acme:
+      email: {{ acme_email }}
+      storage: acme.json
+{% if "dev" in deploy_environment %}
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+{% endif %}
+      dnsChallenge:
+        provider: {{ cloud_provider }}
+        delayBeforeCheck: 0
+{% endif %}

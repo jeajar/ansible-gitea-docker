@@ -1,0 +1,10 @@
+---
+- hosts: all
+  become: yes
+  roles:
+    - { role: os, tags: os }
+    - { role: dockerswarm, tags: docker }
+    - { role: gitea, tags: app }
+  vars_files:
+    - vault.yml
+    - vars.yml

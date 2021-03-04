@@ -1,0 +1,4 @@
+ansible==2.10.6
+ansible-base==2.10.6
+passlib==1.7.4
+jmespath==0.10.0

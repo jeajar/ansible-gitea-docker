@@ -1,0 +1,27 @@
+---
+- name: Set Hostname
+  ansible.builtin.hostname:
+    use: systemd
+    name: "{{ hostname }}.{{ domain }}"
+
+- name: Create {{ service_user }} service Group
+  group:
+    name: "{{ service_user }}"
+    gid: "{{ service_user_gid }}"
+    state: present
+    system: True
+
+- name: Create {{ service_user }} service User
+  user: 
+    name: "{{ service_user }}"
+    password: "{{ service_user_password | password_hash('sha512')}}"
+    uid: "{{ service_user_uid }}"
+    shell: /bin/bash
+    groups: "sudo"
+    append: yes
+
+- name: Set authorized key from file
+  authorized_key:
+    user: "{{ service_user }}"
+    state: present
+    key: "{{ lookup('file', '{{ service_user_public_key }}') }}"

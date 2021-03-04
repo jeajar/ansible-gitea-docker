@@ -1,0 +1,45 @@
+---
+service_user: gitea
+service_user_uid: 1000
+service_user_gid: 1000
+app_folder: /home/{{ service_user }}/gitea
+hostname: gitea
+db_password: test
+domain: example.com
+db_username: gitea
+db_database: gitea
+db_type: postgres
+# Gitea deployment environment variables
+# https://docs.gitea.io/en-us/install-with-docker/
+
+gitea_mailer_enabled: True
+gitea_mailer_from: gitea@example.com
+gitea_mailer_type: smtp
+gitea_mailer_host: smtp.example.com
+gitea_mailer_is_tls_enabled:  True
+# # Define user/password for SMTP:
+# gitea_mailer_user:
+# gitea_mailer_passwd:
+gitea_disable_registration: False
+# Gitea service SSH port. It is recommended to use a different port to connect to the OS and leave port 22 for gitea.
+service_ssh_port: 22
+# If service_ssh_port is not 22, this variable is ignored.
+host_ssh_port: 2222
+
+# "dev" uses the Let's Encrypt Staging CA, "prod" uses Let's Encrypt.
+# "prod" uses Let's Encrypt
+# "local-dev" uses self-signed certificates
+# "local-prod" uses custom certificates, ideally from a local PKI. "server.crt" and
+# "server-key.pem" must exist in files/
+deploy_environment: local-dev
+
+acme_email: acme@example.com
+cloud_provider: digitalocean
+# #Make sure to set this variable for Traefik when using Digital Ocean. Check Traefik documentation for all available profiders and their environment variables.
+# digital_ocean_api:
+pkgs:
+  - python3-pip
+pip_pkgs:
+  - docker
+  - docker-compose
+  - jsondiff

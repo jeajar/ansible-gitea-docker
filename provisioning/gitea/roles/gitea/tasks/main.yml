@@ -1,0 +1,119 @@
+---
+- name: Modify ssh port
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "Port {{ host_ssh_port }}"
+    regexp: "^Port"
+    state: present
+  when: service_ssh_port == 22
+  notify:
+    - reload sshd
+
+- name: Install dependencies
+  apt:
+    name: "{{ pkgs }}"
+    state: present
+    update_cache: yes
+
+- name: Install docker python bindings
+  pip:
+    name: "{{ pip_pkgs }}"
+
+- name: Create docker dir
+  file:
+    path: "{{ app_folder }}"
+    state: directory
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: 0755
+
+- name: Create dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: 0755
+  loop:
+    - "{{ app_folder }}/traefik"
+    - "{{ app_folder }}/traefik/certs"
+    - "{{ app_folder }}/traefik/extra"
+
+- name: Create traefik acme.json
+  copy:
+    src: acme.json
+    dest: "{{ app_folder }}/traefik/acme.json"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: 0600
+  when: '"local" not in deploy_environment'
+
+- name: Copy traefik rules
+  copy:
+    src: rules.yml
+    dest: "{{ app_folder }}/traefik/extra/rules.yml"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: 0755
+
+- name: Copy traefik certs config
+  copy:
+    src: certs.yml
+    dest: "{{ app_folder }}/traefik/extra/certs.yml"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: 0755
+  when: '"local" in deploy_environment'
+
+- name: Set templatized traefik configuration
+  template:
+    src: "traefik/traefik.yml.j2"
+    dest: "{{ app_folder }}/traefik/traefik.yml"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: 0755
+
+- name: Generate OpenSSL private key
+  community.crypto.openssl_privatekey:
+    path: "{{ app_folder }}/traefik/certs/server-key.pem"
+  when: deploy_environment == "local-dev"
+
+- name: Create self-signed OpenSSL server certificate
+  community.crypto.x509_certificate:
+    path: "{{ app_folder }}/traefik/certs/server.crt"
+    privatekey_path: "{{ app_folder }}/traefik/certs/server-key.pem"
+    provider: selfsigned
+  when: deploy_environment == "local-dev"
+
+- name: Copy Server certificate and key
+  copy:
+    src: "{{ item }}"
+    dest: "{{ app_folder }}/traefik/certs/"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: 0600
+  with_items:
+    - server.crt
+    - server-key.pem
+  when: 'deploy_environment == "local-prod"'
+
+- name: Set templatized docker swarm stack
+  template:
+    src: "stack.yml.j2"
+    dest: "{{ app_folder }}/stack.yml"
+    owner: "{{ service_user }}"
+    group: "{{ service_user }}"
+    mode: 0755
+
+- name: Create db_password docker secret
+  community.general.docker_secret:
+    name: db_password
+    data: "{{ db_password }}"
+    state: present
+
+- name: Deploy stack from compose file
+  community.docker.docker_stack:
+    state: present
+    name: "{{ service_user }}"
+    compose:
+      - "{{ app_folder }}/stack.yml"

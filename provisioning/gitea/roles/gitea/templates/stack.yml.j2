@@ -1,0 +1,139 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.4
+    networks:
+      - traefik
+    ports:
+      - "80:80"
+      - "443:443"
+      - "{{ service_ssh_port }}:{{ service_ssh_port }}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      placement:
+        constraints: [node.role==manager]
+    configs:
+      - source: traefik_config
+        target: /traefik.yml
+        mode: 0444
+      - source: traefik_rules
+        target: /extra/rules.yml
+        mode: 0600
+{% if "local" not in deploy_environment %}
+      - source: cert_store
+        target: /acme.json
+        mode: 0600
+{% endif %}
+{% if "local" in deploy_environment %}
+      - source: server_cert
+        target: /etc/traefik/certs/server.crt
+        mode: 0600
+      - source: server_key
+        target: /etc/traefik/certs/server-key.pem
+        mode: 0600
+      - source: certs_rules
+        target: /extra/certs.yml
+        mode: 0600
+{% endif %}
+
+  db:
+    image: postgres:alpine
+    secrets:
+      - db_password
+    networks:
+      - traefik
+    volumes:
+      - db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER={{ db_username }}
+      - POSTGRES_PASSWORD=/run/secrets/db_password
+      - POSTGRES_DB={{ db_database }}
+    deploy:
+      labels:
+        - traefik.enable=false
+      placement:
+        constraints: [node.role==manager]
+
+  gitea:
+    image: gitea/gitea
+    environment:
+      - USER_UID={{ service_user_uid }}
+      - USER_GID={{ service_user_gid }}
+      - SSH_DOMAIN={{ hostname }}.{{ domain }}
+      - SSH_PORT={{ service_ssh_port }}
+      - SSH_LISTEN_PORT=22
+      - DOMAIN={{ domain }}
+      - ROOT_URL=https://{{ hostname }}.{{ domain }}
+      - DB_TYPE=postgres
+      - DB_HOST=db:5432
+      - DB_NAME={{ db_username }}
+      - DB_USER={{ db_database }}
+      - DB_PASSWD=/run/secrets/db_password
+      - GITEA__service__DISABLE_REGISTRATION={{ gitea_disable_registration }}
+      - GITEA__mailer__ENABLED={{ gitea_mailer_enabled }}
+{% if gitea_mailer_user is defined %}
+      - GITEA__mailer__USER={{ gitea_mailer_user }}
+{% endif %}
+{% if gitea_mailer_passwd is defined %}
+      - GITEA__mailer__PASSWD={{ gitea_mailer_passwd }}
+{% endif %}
+      - GITEA__mailer__MAILER_TYPE={{ gitea_mailer_type }}
+      - GITEA__mailer__HOST={{ gitea_mailer_host }}
+      - GITEA__mailer__IS_TLS_ENABLED={{ gitea_mailer_is_tls_enabled }}
+      - GITEA__mailer__FROM={{ gitea_mailer_from }}
+    networks:
+      - traefik
+    depends_on:
+      - db
+    secrets:
+      - db_password
+    volumes:
+      - gitea:/data
+    deploy:
+      labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea-local.entrypoints=http"
+      - "traefik.http.routers.gitea-local.rule=Host(`{{ hostname }}.{{ domain }}`)"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.gitea-local.middlewares=https-redirect"
+      - "traefik.http.routers.gitea-local-secure.entrypoints=https"
+      - "traefik.http.routers.gitea-local-secure.tls=true"
+      - "traefik.http.routers.gitea-local-secure.rule=Host(`{{ hostname }}.{{ domain }}`)"
+      - "traefik.http.routers.gitea-local.service=gitea-local-svc"
+      - "traefik.http.services.gitea-local-svc.loadbalancer.server.port=3000"
+      - "traefik.tcp.routers.gitea-ssh.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.gitea-ssh.entrypoints=ssh"
+      - "traefik.tcp.routers.gitea-ssh.service=gitea-ssh-svc"
+      - "traefik.tcp.services.gitea-ssh-svc.loadbalancer.server.port={{ service_ssh_port }}"
+      placement:
+        constraints: [node.role==manager]
+
+networks:
+  traefik:
+    name: traefik
+  
+secrets:
+  db_password:
+    external: true
+
+volumes:
+  gitea:
+  db:
+
+configs:
+  traefik_config:
+    file: "{{ app_folder }}/traefik/traefik.yml"
+  traefik_rules:
+    file: "{{ app_folder }}/traefik/extra/rules.yml"
+  certs_rules:
+    file: "{{ app_folder }}/traefik/extra/certs.yml"
+{% if "local" not in deploy_environment %}
+  cert_store:
+    file: "{{ app_folder }}/traefik/acme.json"
+{% endif %}
+  server_cert:
+    file: "{{ app_folder }}/traefik/certs/server.crt"
+  server_key:
+    file: "{{ app_folder }}/traefik/certs/server-key.pem"

@@ -1,0 +1,8 @@
+---
+service_user: service
+service_user_password: password
+service_user_uid: 1000
+service_user_gid: 1000
+service_user_public_key: /home/{{ ansible_env.username }}/.ssh/id_rsa.pub
+hostname: default
+domain: example.com
