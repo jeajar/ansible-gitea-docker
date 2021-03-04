@@ -9,3 +9,6 @@
 
 # Ansible Vault Password file
 vault.yml
+
+# Vagrant
+.vagrant/
