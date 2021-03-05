@@ -1,8 +1,8 @@
 service_user: gitea
-service_user_public_key: /Users/jm/.ssh/jmax.pub
+service_user_public_key: /Users/jm/.ssh/difuze.pub
 hostname: gitea
-domain: jmax.local
-gitea_mailer_host: 192.168.1.19
+domain: tcsmtlprod.covitec.com
+gitea_mailer_host: 10.99.139.2:25
 gitea_mailer_is_tls_enabled: False
 firewall_allowed_tcp_ports:
   - "22"
