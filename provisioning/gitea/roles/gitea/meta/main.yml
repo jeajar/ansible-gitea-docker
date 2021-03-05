@@ -20,5 +20,4 @@ galaxy_info:
     - gitea
     - docker
 
-dependencies:
-  - atosatto.docker-swarm
+  dependencies: []

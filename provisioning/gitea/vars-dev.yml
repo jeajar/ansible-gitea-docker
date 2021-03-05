@@ -1,12 +1,18 @@
-    db_password: test
-    service_user: gitea
-    service_user_public_key: /Users/jm/.ssh/jmax.pub
-    hostname: gitea
-    domain: jmax.local
-    gitea_mailer_host: 192.168.1.19:25
-    gitea_mailer_is_tls_enabled: False
-    gitea_disable_registration: True
-    deploy_environment: local-prod
-    docker_group_users:
-      - gitea
-      - vagrant
+db_password: test
+service_user: gitea
+service_user_public_key: /Users/jm/.ssh/jmax.pub
+hostname: gitea
+domain: jmax.local
+gitea_mailer_host: 192.168.1.19:25
+gitea_mailer_is_tls_enabled: False
+gitea_disable_registration: True
+deploy_environment: local-prod
+firewall_allowed_tcp_ports:
+  - "22"
+  - "2222"
+  - "80"
+  - "443"
+firewall_flush_rules_and_chains: false
+docker_group_users:
+  - gitea
+  - vagrant

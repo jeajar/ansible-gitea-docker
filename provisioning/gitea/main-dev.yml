@@ -5,5 +5,6 @@
     - { role: os, tags: os }
     - { role: dockerswarm, tags: docker }
     - { role: gitea, tags: app }
+    - { role: geerlingguy.firewall, tags: firewall}
   vars_files:
     - vars-dev.yml
