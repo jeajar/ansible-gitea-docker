@@ -12,3 +12,7 @@ vault.yml
 
 # Vagrant
 .vagrant/
+
+# Certificates
+*.pem
+*.crt
