@@ -4,6 +4,15 @@
     use: systemd
     name: "{{ hostname }}.{{ domain }}"
 
+- name: Replace localhost entry
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.0\.1'
+    line: "127.0.0.1 {{ hostname }}  {{ hostname }}.{{ domain }}"
+    owner: root
+    group: root
+    mode: '0644'
+
 - name: Create {{ service_user }} service Group
   group:
     name: "{{ service_user }}"
@@ -17,7 +26,7 @@
     password: "{{ service_user_password | password_hash('sha512')}}"
     uid: "{{ service_user_uid }}"
     shell: /bin/bash
-    groups: "sudo"
+    groups: sudo
     append: yes
 
 - name: Set authorized key from file
@@ -25,3 +34,23 @@
     user: "{{ service_user }}"
     state: present
     key: "{{ lookup('file', '{{ service_user_public_key }}') }}"
+
+- name: Set timezone
+  timezone:
+    name: "{{ timezone }}"
+  notify: systemd-timesyncd
+
+- name: Configure systemd-timesyncd
+  template:
+    src: timesyncd.conf.j2
+    dest: /etc/systemd/timesyncd.conf
+    mode: 0644
+    owner: root
+    group: root
+  notify: systemd-timesyncd
+
+- name: Start and enable systemd-timesyncd
+  service:
+    name: systemd-timesyncd.service
+    enabled: yes
+    state: started

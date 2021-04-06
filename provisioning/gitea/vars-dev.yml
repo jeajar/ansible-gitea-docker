@@ -16,3 +16,5 @@ firewall_flush_rules_and_chains: false
 docker_group_users:
   - gitea
   - vagrant
+ntp_hosts:
+  - time.{{ domain }}

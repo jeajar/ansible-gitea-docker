@@ -6,3 +6,9 @@ service_user_gid: 1000
 service_user_public_key: /home/{{ ansible_env.username }}/.ssh/id_rsa.pub
 hostname: default
 domain: example.com
+timezone: Etc/UTC
+ntp_hosts:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+  - 2.pool.ntp.org
+  - 3.pool.ntp.org
